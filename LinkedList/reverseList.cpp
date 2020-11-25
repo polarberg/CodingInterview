@@ -11,7 +11,6 @@ struct ListNode {
 };
 
 class Solution {
-    
 public:
     ListNode * head = NULL;
     ListNode* reverseListIterative();
@@ -51,13 +50,13 @@ ListNode* Solution::reverseListRecursive(ListNode* head) { // *** DIDN"T FIX YET
 }
      
 void Solution::insert(int new_data) { //insert new node at front of list
+    ListNode* new_node = new ListNode(new_data, head);
+    head = new_node;
     /* ListNode* new_node = (ListNode*) malloc(sizeof(struct ListNode));
     new_node->val = new_data;
     new_node->next = head; */
-    ListNode* new_node = new ListNode(new_data, head);
-    head = new_node;
 }    
-
+    
 void Solution::print(ListNode* head) {
     ListNode * curr; 
     curr = head; 
@@ -74,7 +73,7 @@ Goal:   3->2->1->NULL
 */
 int main() {
     Solution test;
-    int n = 3;
+    int n = 5;
     for(int i = n; i > 0; i--) {
         test.insert(i);
     }
@@ -82,6 +81,7 @@ int main() {
     cout<<endl;
 
     test.print(test.reverseListIterative());
+    //test.print(test.reverseListRecursive(test.head)); // still can't change original
     cout<<endl;
     test.print(test.head); 
 
