@@ -9,7 +9,7 @@ class Solution {
             return; 
         }
         
-        for(int i = pos; i < cand.size(); i++) {
+        for(unsigned int i = pos; i < cand.size(); i++) {
             if(cand[i] <= target) {
                 temp.push_back(cand[i]);
                 backtrack(cand, i, target - cand[i], temp, res);
@@ -17,7 +17,6 @@ class Solution {
             }
         }
     }
-    
     
 public:
     vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
@@ -32,7 +31,7 @@ public:
         std::cout << "The vector elements are : \n";
 
         for(auto x : a) {
-            for(int i=0; i < x.size(); i++) {
+            for(unsigned int i=0; i < x.size(); i++) {
                 std::cout << x.at(i) << ' ';
             }
             cout<< "\n";

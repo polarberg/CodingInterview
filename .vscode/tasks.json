@@ -2,26 +2,26 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "cppbuild",
+			"type": "shell",
 			"label": "C/C++: g++.exe build active file",
-			"command": "C:\\MinGW\\bin\\g++.exe",
+			"command": "g++",
 			"args": [
 				"-g",
-				"${file}",
+				"-std=c++17",
+				"-Wshadow",
+				"-Wall",
 				"-o",
-				"${fileDirname}\\${fileBasenameNoExtension}.exe"
-			],
-			"options": {
-				"cwd": "C:\\MinGW\\bin"
-			},
-			"problemMatcher": [
-				"$gcc"
+				"${fileDirname}\\${fileBasenameNoExtension}.exe",
+				"{file}",
+				"-O2",
+				"-Wno-unused-result"
 			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			},
-			"detail": "compiler: C:\\MinGW\\bin\\g++.exe"
+			"detail": "compiler: C:\\MinGW\\bin\\g++.exe Extra",
+			"problemMatcher": []
 		},
 		{
 			"type": "cppbuild",
@@ -39,11 +39,30 @@
 			"problemMatcher": [
 				"$gcc"
 			],
+			"group": "build",
+			"detail": "compiler: C:\\MinGW\\bin\\cpp.exe"
+		},
+		{
+			"type": "cppbuild",
+			"label": "C/C++: g++.exe build active file",
+			"command": "C:/MinGW/bin/g++.exe",
+			"args": [
+				"-g",
+				"${file}",
+				"-o",
+				"${fileDirname}\\${fileBasenameNoExtension}.exe"
+			],
+			"options": {
+				"cwd": "C:/MinGW/bin"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			},
-			"detail": "compiler: C:\\MinGW\\bin\\cpp.exe"
+			"detail": "compiler: C:/MinGW/bin/g++.exe Simple"
 		}
 	]
 }
