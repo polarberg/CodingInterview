@@ -1,4 +1,5 @@
 // Given a string s, return the longest palindromic substring in s.
+// O(N^2) time O(1) space 
 #include <iostream>
 #include <string>
 
@@ -11,12 +12,12 @@ public:
         string best_s = "";
         int n = s.length();
         for(int mid = 0; mid < n; mid++) { // middle is character  // b a b a d
-            for(int x = 0; mid - x >= 0 && mid + x < n; x++) {
+            for(int x = 0; mid - x >= 0 && mid + x < n; x++) { // chars are still in string
                 if(s[mid-x] != s[mid+x]) {
                     break;
                 }
                 int len = 2 * x + 1; // Solution (based on for loop)
-                if(len > best_len) {
+                if(len > best_len) { // O(N) times at most
                     best_len = len;
                     best_s = s.substr(mid - x, len);
                 }
@@ -42,5 +43,9 @@ public:
 int main() {
     Solution test; 
     string s = "babad";
-    cout << test.longestPalindrome(s); 
+    cout << test.longestPalindrome(s) << endl; 
+
+
+    cin >> s;
+    cout << test.longestPalindrome(s) << endl; 
 }
