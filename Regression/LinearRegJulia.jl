@@ -36,8 +36,9 @@ describe(df)
 names(df)
 
 CSV.File("nyc-east-river-bicycle-counts.csv"; select=["Williamsburg Bridge", "Brooklyn Bridge"])
-gr()
-plot(df.Date, [df."Williamsburg Bridge", df."Brooklyn Bridge"], title = "Williamsburg Bridge vs Brooklyn Bridge")
+
+# create scatter plot 
+scatter(df.Date, [df."Williamsburg Bridge", df."Brooklyn Bridge", df."Manhattan Bridge", df."Queensboro Bridge"],  title = "Williamsburg Bridge vs Brooklyn Bridge")
 
 
 plot(df."Precipitation", df."Date")

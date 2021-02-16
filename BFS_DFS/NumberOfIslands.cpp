@@ -1,4 +1,4 @@
-// Number of Islands
+// Number of Islands - BFS Solution
 /* 
     Given an m x n 2d grid map of '1's (land) and '0's (water), return the number of islands.
 
@@ -64,6 +64,10 @@ int main() {
         {'0','0','0','0','0'}
     };
     // Expected Output: 1
+
+    /* Example 2:
+    Input: grid = [[1,2,3],[4,5,6]]
+    Output: 12 */
 
     Solution test; 
     cout << test.numIslands(grid);
