@@ -9,21 +9,21 @@ int j = i++;
 cout<<"i:"<<i<<endl; // 6
 cout<<"j:"<<j<<endl; // 5
 
-cout<<"++i\n";
+cout<<"\n++i\n";
 i = 5; 
 j = ++i; 
 cout<<"i:"<<i<<endl; // 6
 cout<<"j:"<<j<<endl; // 6
 
-cout<<"i--\n";
+cout<<"\ni--\n";
 i = 5; 
 j = i--; 
-cout<<"i:"<<i<<endl; // 6
+cout<<"i:"<<i<<endl; // 4
 cout<<"j:"<<j<<endl; // 5
 
-cout<<"--i\n";
+cout<<"\n--i\n";
 i = 5; 
 j = --i; 
-cout<<"i:"<<i<<endl; // 6
-cout<<"j:"<<j<<endl; // 6
+cout<<"i:"<<i<<endl; // 4
+cout<<"j:"<<j<<endl; // 4
 }

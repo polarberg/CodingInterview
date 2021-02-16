@@ -7,7 +7,7 @@ int findMissingElem(vector<int> vec1, vector<int> vec2) { // can't pass entire A
     int difference = 0; // 
     int s1 = vec1.size();
     int s2 = vec2.size();
-    int n = (s1 < s2) ? s1 : s2; // size of array
+    int n = (s1 < s2) ? s1 : s2; // use size of smaller vector
     for(int i = 0; i < n; i++) {
         difference += vec1[i] - vec2[i];
         cout<< difference;

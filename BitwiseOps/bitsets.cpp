@@ -27,6 +27,19 @@ int TrianglesInGraph() {
     */
 }
 
+// Given N<=10^7 numbers, each between 0 and 10^9.
+// How many different values appear in the sequence 
+/* bitset<1000000001> visited;
+int DifferentNums() { 
+    int n = sizeof(arr);
+    for(int i = 0; i < n; i++) {
+        int x; 
+        cin>>x;
+        visited[x] = true;
+    }
+    return visited.count(); // O((size of bitset) / (size of int)) 
+} */
+
 int main() {
     ;
     cout << (KnapsackBitset() ? "\ntrue" : "\nfalse");

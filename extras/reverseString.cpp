@@ -17,7 +17,7 @@ void reverseString(vector<char>& s) {
     return;
 }
 
-void reverseS(vector<char>)
+//void reverseS(vector<char>)
 int main() {
     clock_t tStart = clock();
 
