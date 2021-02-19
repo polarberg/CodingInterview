@@ -1,16 +1,13 @@
-# Coding Interview Ques #
+# Coding Interview Prep #
 
 
 
 ## To-Do  ##
 
-- [ ] LinkedList/reverseList.cpp
+- [x] LinkedList/reverseList.cpp (using Array, Vector, and Command Line input)
 - [ ] Jupyter Notebooks
 
-### Priority ###
-- [ ] 
-
-#### Future Plans ####
+#### Future Projects ####
 - [ ]
 -   
 
