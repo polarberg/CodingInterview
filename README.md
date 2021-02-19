@@ -4,7 +4,7 @@
 
 ## To-Do  ##
 
-- [x] LinkedList/reverseList.cpp (using Array, Vector, and Command Line input)
+
 - [ ] Jupyter Notebooks
 
 #### Future Projects ####
@@ -17,4 +17,8 @@
     - [ ] Inheritance 
 - [ ] Networking 
 
+## Completed Since (Feb 19 2021) ## 
+- [x] LinkedList/reverseList.cpp (using Array, Vector, and Command Line input)
+
 ## Useful Links ##
+https://guides.github.com/features/mastering-markdown/ 
