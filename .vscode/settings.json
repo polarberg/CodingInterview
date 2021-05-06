@@ -77,6 +77,5 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp"
-    },
-    "julia.environmentPath": "C:\\Users\\Austin\\.julia\\environments\\v1.5"
+    }
 }
