@@ -155,3 +155,54 @@ let
 	plot!(result, 1:T, sim.I, ylim=(0, N), label="Infectious")
 	plot!(result, 1:T, sim.R, ylim=(0, N), label="Recovered")
 end
+
+function repeat_simulations(N, T, infection, num_simulations)
+	N = 100
+	T = 1000
+	
+	map(1:num_simulations) do _
+		simulation(N, T, infection)
+	end
+end
+simulations = repeat_simulations(100, 1000, InfectionRecovery(0.02, 0.002), 20)
+(simulations[1].S + simulations[1].I + simulations[1].R) .÷ 100
+plot(simulations[1].I, lw=3)
+(simulations[1].I + simulations[2].I) .÷ 2
+length(simulations)
+
+let
+	p = plot()
+	
+	for sim in simulations
+		plot!(p, 1:1000, sim.I, alpha=.5, label=nothing)
+	end
+	
+	n = length(first(simulations).I) # number of timesteps 
+	mean_Num_of_I = zeros(n)
+	
+#= 	for j in 1:n # for each time step 
+		for i in 1:length(simulations) # for each simulation
+			mean_Num_of_I[j] += simulations[i].I[j] # jth elem 
+		end 
+		mean_Num_of_I[j] ÷= size(simulations,1)
+	end  =#
+
+	for i in 1:length(simulations) # add up all simulations into one 
+		mean_Num_of_I += simulations[i].I 
+	end 
+	mean_Num_of_I .÷= 20
+	plot!(mean_Num_of_I, lw=3)
+	p
+end
+
+let 
+	T = first(simulations).S
+end 
+function sir_mean_plot(simulations::Vector{<:NamedTuple})
+	# you might need T for this function, here's a trick to get it:
+	T = length(first(simulations).S)
+	
+	return missing
+end
+
+
