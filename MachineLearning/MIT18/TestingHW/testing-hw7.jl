@@ -1,5 +1,13 @@
 using BenchmarkTools
 using Plots
+using Statistics
+
+begin #calculating S.D. 
+	v = rand(100)
+	m = sum(v) / length(v)  # mean
+	σ² = sum( (v .- m) .^ 2 ) / (length(v) - 1)
+	σ = sqrt(σ²)
+end 
 function bernoulli(p::Number)
 	rand() < p
 end
@@ -83,7 +91,7 @@ let
 	(agent=agent, source=source)
 end
 
-function step!(agents::Vector{Agent}, infection::InfectionRecovery)
+function step!(agents::Vector{Agent}, infection::AbstractInfection) # AbstractInfection more general than InfectionRecovery
 	# Choose two random agents: an agent and a source.
 	n = size(agents,1) 
 	chosen_Agent = agents[rand(1:n)]
@@ -156,53 +164,137 @@ let
 	plot!(result, 1:T, sim.R, ylim=(0, N), label="Recovered")
 end
 
-function repeat_simulations(N, T, infection, num_simulations)
-	N = 100
-	T = 1000
-	
+function repeat_simulations(N::Int64=100, T::Int64=1000, infection::AbstractInfection=InfectionRecovery(0.02, 0.002), num_simulations::Int64=20)
 	map(1:num_simulations) do _
 		simulation(N, T, infection)
 	end
 end
+
+function pri(y::Int64=1)
+	print(y)
+end
+pri(2)
+
 simulations = repeat_simulations(100, 1000, InfectionRecovery(0.02, 0.002), 20)
 (simulations[1].S + simulations[1].I + simulations[1].R) .÷ 100
 plot(simulations[1].I, lw=3)
 (simulations[1].I + simulations[2].I) .÷ 2
 length(simulations)
-
-let
+zeros(Int64, length(first(simulations).I)) + simulations[1].I
+@btime let
 	p = plot()
 	
 	for sim in simulations
 		plot!(p, 1:1000, sim.I, alpha=.5, label=nothing)
 	end
 	
-	n = length(first(simulations).I) # number of timesteps 
-	mean_Num_of_I = zeros(n)
-	
-#= 	for j in 1:n # for each time step 
-		for i in 1:length(simulations) # for each simulation
-			mean_Num_of_I[j] += simulations[i].I[j] # jth elem 
-		end 
-		mean_Num_of_I[j] ÷= size(simulations,1)
-	end  =#
+	Num_TimeSteps = length(first(simulations).I) # number of timesteps 
+	Num_Sims = length(simulations)
+	mean_Num_of_I = zeros(Int64,Num_TimeSteps)
 
-	for i in 1:length(simulations) # add up all simulations into one 
+	for i in 1:Num_Sims # add up all simulations into one 
 		mean_Num_of_I += simulations[i].I 
 	end 
-	mean_Num_of_I .÷= 20
-	plot!(mean_Num_of_I, lw=3)
+	mean_Num_of_I .÷= Num_Sims
+	plot!(mean_Num_of_I, lw=2, linecolor="magenta")
 	p
 end
 
-let 
-	T = first(simulations).S
-end 
-function sir_mean_plot(simulations::Vector{<:NamedTuple})
+zeros(Int64,1000,3)[:,1] + simulations[1].S
+function sir_mean_plot(simulations::Vector{<:NamedTuple}) # returns a plot of the means of S I R,  and  as a function of time on a single graph.
 	# you might need T for this function, here's a trick to get it:
-	T = length(first(simulations).S)
+	Num_TimeSteps = length(first(simulations).I) # number of timesteps 
+	mean_SIR = zeros(Num_TimeSteps,3) # array to plot S I R 
+	Num_Sims = length(simulations) # num of sims 
 	
-	return missing
+	p = plot() 
+
+	for i in 1:Num_Sims # add up all simulations into one 
+		mean_SIR[:,1] += simulations[i].S 
+		mean_SIR[:,2] += simulations[i].I 
+		mean_SIR[:,3] += simulations[i].R 
+	end 
+
+	mean_SIR ./= Num_Sims
+
+	plot!(mean_SIR[:,1], label="Susceptible")
+	plot!(mean_SIR[:,2], label="Infectious")
+	plot!(mean_SIR[:,3], label="Recovered")
+	return p
+end
+@btime sir_mean_plot(simulations)
+simulations[1].S[1]
+
+function sir_mean_error_plot(simulations::Vector{<:NamedTuple}) # does the same as sir_mean_plot, which also computes the standard deviation  of S, I, R at each step.
+	# you might need T for this function, here's a trick to get it:
+	Num_TimeSteps = length(first(simulations).I) # number of timesteps 
+	Num_Sims = length(simulations) # num of sims 
+	
+	mean_SIR = zeros(Num_TimeSteps,3) # array to plot mean S I R  # (row,S or I or R)
+	STD_SIR = zeros(Num_TimeSteps,3) # vectors of std at each timestep 
+	
+	tmp_Mean_V = zeros(Num_Sims,3)
+
+	mean_error_plot = plot(dpi=10000) 
+
+	for t in 1:Num_TimeSteps
+		for s in 1:Num_Sims # copies 't'th element of SIR into tmp_Mean_V
+			tmp_Mean_V[s,1] = simulations[s].S[t] 
+			tmp_Mean_V[s,2] = simulations[s].I[t] 
+			tmp_Mean_V[s,3] = simulations[s].R[t] 
+		end  
+		mean_SIR[t,1] = mean(tmp_Mean_V[:,1])
+		mean_SIR[t,2] = mean(tmp_Mean_V[:,2])
+		mean_SIR[t,3] = mean(tmp_Mean_V[:,3])
+
+		STD_SIR[t,1] = std(tmp_Mean_V[:,1])
+		STD_SIR[t,2] = std(tmp_Mean_V[:,2])
+		STD_SIR[t,3] = std(tmp_Mean_V[:,3])
+	end 
+
+	plot!(mean_SIR[:,1], ribbon=STD_SIR[:,1], lw=1, label="Susceptible")
+	plot!(mean_SIR[:,2], ribbon=STD_SIR[:,2], lw=1, label="Infectious")
+	plot!(mean_SIR[:,3], ribbon=STD_SIR[:,3], lw=1, label="Recovered")
+
+	return mean_error_plot
+end
+sir_mean_error_plot(simulations)
+
+histogram(simulations[1].I)
+
+
+
+
+# ReInfection - New type of infection 
+struct Reinfection <: AbstractInfection 
+	p_infection
+	p_recovery # prob to become susceptible again 
 end
 
+function interact!(agent::Agent, source::Agent, infection::Reinfection)
+		# agent is S, source is I => source infects agent with infection prob 
+		if is_susceptible(agent) && is_infected(source) && bernoulli(infection.p_infection) 
+			set_status!(agent, I) # agent becomes infected  
+			source.num_infected+=1 # source infected record increases!
+		elseif is_infected(agent) && bernoulli(infection.p_recovery) 
+			set_status!(agent, S) # set back to susceptible***  
+		end 
+end
 
+simulation(3,20,Reinfection(0.1,0.1))
+repeat_simulations(100,1000,Reinfection(0.1,0.1),20)
+sir_mean_plot(repeat_simulations(100,1000,Reinfection(0.1,0.001),20))
+cols = 9
+parry = zeros(cols,100)
+for row in 1:cols
+	parry[row,:] .= row 
+end 
+
+tmpavgvec = zeros(100)
+for i in 1:cols
+	tmpavgvec += parry[i,:]
+end 
+tmpavgvec
+tmpavgvec ./= cols
+tmpavgvec += parry[1,:]
+parry[1,:] .= 1
