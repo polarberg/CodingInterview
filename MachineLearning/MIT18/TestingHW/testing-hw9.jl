@@ -186,10 +186,16 @@ end
 
 
 @enum InfectionStatus S I R
-struct Agent
-    position::Coordinate
-    status::InfectionStatus
-end
+begin 
+    mutable struct Agent
+        position::Coordinate
+        status::InfectionStatus
+    end
+
+    Agent() = Agent(Coordinate(0,0), S)
+end 
+
+Agent() # testing constructor
 
 "
 # Input:
@@ -204,10 +210,29 @@ end
 function initialize(N::Number, L::Number)
 	# gen vector of N agents coordinates within boundary,
         # initialized to susceptible
-    population = [Agent(Coordinate(rand(-L:L),rand(-L:L)), s) for i in 1:N] 
+    population = [Agent(Coordinate(rand(-L:L),rand(-L:L)), S) for i in 1:N] 
 
-    rand(population).status 
+    rand(population).status = I # one agent chosen at random is infectious
 	return population
 end
-rand(-L:L)
+initialize(3, 10)
+
+let # testing
+    L=10 
+    Agent(Coordinate(rand(-L:L),rand(-L:L)), S)
+end
+
+
+# Color based on infection status
+color(s::InfectionStatus) = 
+if s == S
+	"blue"
+elseif s == I
+	"red"
+else
+	"green"
+end
+
+position(a::Agent) = a.position 
+color(a::Agent) = color(a.status) 
 

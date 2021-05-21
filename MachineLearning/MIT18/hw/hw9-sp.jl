@@ -369,10 +369,17 @@ Let's define a type `Agent`. `Agent` contains a `position` (of type `Coordinate`
 @enum InfectionStatus S I R
 
 # ╔═╡ cf2f3b98-09a0-11eb-032a-49cc8c15e89c
-struct Agent
-    position::Coordinate
-    status::InfectionStatus
-end
+begin 
+	mutable struct Agent
+    	position::Coordinate
+    	status::InfectionStatus
+	end
+	
+	Agent() = Agent(Coordinate(0,0),S)
+end 
+
+# ╔═╡ 23f252c9-4df8-49e6-a687-05541ad457f1
+Agent()
 
 # ╔═╡ 814e888a-0954-11eb-02e5-0964c7410d30
 md"""
@@ -383,13 +390,17 @@ It returns a `Vector` of `N` randomly generated `Agent`s. Their coordinates are 
 """
 
 # ╔═╡ 0cfae7ba-0a69-11eb-3690-d973d70e47f4
-# function initialize(N::Number, L::Number)
-	
-# 	return missing
-# end
+function initialize(N::Number, L::Number)
+	# gen vector of N agents coordinates within boundary,
+        # initialized to susceptible
+    population = [Agent(Coordinate(rand(-L:L),rand(-L:L)), S) for i in 1:N] 
+
+    rand(population).status = I # one agent chosen at random is infectious
+	return population
+end
 
 # ╔═╡ 1d0f8eb4-0a46-11eb-38e7-63ecbadbfa20
-# initialize(3, 10)
+initialize(3, 10)
 
 # ╔═╡ e0b0880c-0a47-11eb-0db2-f760bbbf9c11
 # Color based on infection status
@@ -402,10 +413,10 @@ else
 end
 
 # ╔═╡ b5a88504-0a47-11eb-0eda-f125d419e909
-# position(a::Agent) = a.position # uncomment this line
+position(a::Agent) = a.position # uncomment this line
 
 # ╔═╡ 87a4cdaa-0a5a-11eb-2a5e-cfaf30e942ca
-# color(a::Agent) = color(a.status) # uncomment this line
+color(a::Agent) = color(a.status) # uncomment this line
 
 # ╔═╡ 49fa8092-0a43-11eb-0ba9-65785ac6a42f
 md"""
@@ -1009,7 +1020,8 @@ bigbreak
 # ╟─3ed06c80-0954-11eb-3aee-69e4ccdc4f9d
 # ╠═35537320-0a47-11eb-12b3-931310f18dec
 # ╠═cf2f3b98-09a0-11eb-032a-49cc8c15e89c
-# ╠═814e888a-0954-11eb-02e5-0964c7410d30
+# ╠═23f252c9-4df8-49e6-a687-05541ad457f1
+# ╟─814e888a-0954-11eb-02e5-0964c7410d30
 # ╠═0cfae7ba-0a69-11eb-3690-d973d70e47f4
 # ╠═1d0f8eb4-0a46-11eb-38e7-63ecbadbfa20
 # ╟─4fac0f36-0a59-11eb-03d0-632dc9db063a

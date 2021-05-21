@@ -147,6 +147,9 @@ md"""
 👉 Create an agent `test_agent` with status `S` and `num_infected` equal to 0.
 """
 
+# ╔═╡ 07c995af-ec4e-44b2-b07b-291226b7d5cc
+Agent()
+
 # ╔═╡ 18d308c4-0424-11eb-176d-49feec6889cf
 test_agent = Agent(S,0)
 
@@ -862,6 +865,7 @@ bigbreak
 # ╟─ae70625a-041f-11eb-3082-0753419d6d57
 # ╠═b63bbcbb-6f93-4252-b933-f2877d408694
 # ╟─189cae1e-0424-11eb-2666-65bf297d8bdd
+# ╠═07c995af-ec4e-44b2-b07b-291226b7d5cc
 # ╠═18d308c4-0424-11eb-176d-49feec6889cf
 # ╟─190deebc-0424-11eb-19fe-615997093e14
 # ╠═aa3638b9-2ca0-4715-bdd8-f58535f19ade
