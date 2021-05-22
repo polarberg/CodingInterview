@@ -2,7 +2,7 @@ using Plots
 
 struct Coordinate 
     x::Int
-    y::Int
+    y::Int    
 end
 origin = Coordinate(0,0)
 
@@ -18,6 +18,13 @@ origin = Coordinate(0,0)
 julia> make_tuple(Coordinate(1,0))
 (1, 0)
 ```
+
+```julia 
+function make_tuple(c::Coordinate)
+    
+    return (c.x,c.y)
+end
+```
 ...
 """
 function make_tuple(c::Coordinate)
@@ -31,8 +38,11 @@ function Base.:+(a::Coordinate, b::Coordinate)
     
     return Coordinate(a.x + b.x, a.y + b.y)
 end
-Coordinate(3,4) + Coordinate(10,10) # should be (3+10,4+10) = (13,14)
-+(Coordinate(3,4), Coordinate(10,10)) # infix notation 
+let # testing 
+    Coordinate(3,4) + Coordinate(10,10) # should be (3+10,4+10) = (13,14)
+    +(Coordinate(3,4), Coordinate(10,10)) # infix notation
+end 
+
 "In our model, agents will be able to walk in 4 directions: 
 \n - **up, down, left and right**
 \nWe can define these directions as Coordinate s.\n"
@@ -72,8 +82,7 @@ function trajectory(w::Coordinate, n::Int)
     # computing trajectory
 	return accumulate(+, rand_moves; init=w)
 end
-test_trajectory = trajectory(Coordinate(4,4), 30) 
-
+test_trajectory = trajectory(Coordinate(4,4),1) 
 
 function plot_trajectory!(p::Plots.Plot, trajectory::Vector; kwargs...)
 	plot!(p, make_tuple.(trajectory); 
@@ -154,6 +163,18 @@ and then reflects the resulting coordinate, or use a for loop.
 - `w::Coordinate`: *Wanderer*
 - `n::Int`: *number of steps*
 - `L::Number`: *boundary*
+
+# Implementation
+```julia 
+function trajectory(c::Coordinate, n::Int, L::Number)
+    # gen vec of n random moves, each move equally likely 
+    rand_moves = rand(possible_moves, n)
+
+    # computing trajectory
+	return accumulate( (x,y) -> collide_boundary(+(x, y), L) , rand_moves; init=c)
+end
+```
+...
 """
 function trajectory(c::Coordinate, n::Int, L::Number)
     rand_moves = rand(possible_moves, n) # gen vec of n random moves, each move equally likely 
@@ -161,7 +182,7 @@ function trajectory(c::Coordinate, n::Int, L::Number)
     # computing trajectory
 	return accumulate( (x,y) -> collide_boundary(+(x, y), L) , rand_moves; init=c)
 end
-trajectory(Coordinate(0,0),10,10)
+trajectory(Coordinate(0,0),1,10)
 
 let
     ytyj = (x,y) -> collide_boundary(+(x, y), 10)
@@ -193,11 +214,17 @@ begin
     end
 
     Agent() = Agent(Coordinate(0,0), S)
+    Agent(x::Int,y::Int, Status::InfectionStatus) = Agent(Coordinate(x,y), Status)
+    Agent(Status::InfectionStatus) = Agent(Coordinate(0,0), Status)
 end 
 
 Agent() # testing constructor
-
+Agent(0,0,S)
+Agent(I)
 "
+```julia 
+initialize(Number of Agents::Number, L::Number)
+```
 # Input:
 - `N::Number`: number of agents 
 - `L::Number`: 2L is side length of the square box where the agents live 
@@ -233,6 +260,274 @@ else
 	"green"
 end
 
-position(a::Agent) = a.position 
+Base.:position(a::Agent) = a.position 
 color(a::Agent) = color(a.status) 
+status(a::Agent) = a.status # I added
+
+position.(initialize(3, 10))
+status.(initialize(3, 10))
+length(initialize(3, 10))
+
+" 
+...\n
+Plot a point for each agent at its location, coloured according to its status.
+# Arguments
+- `agents::Vector`: Collection of agents 
+- `L`: Box size 'L' 
+\nYou can use the keyword argument `c=color.(agents)` inside your call to the plotting function make the point colors correspond to the infection statuses. 
+"
+function visualize(agents::Vector, L)
+
+    #positions = position.(agents).x,position.(agents).y
+    positions = make_tuple.(position.(agents))
+    c = color.(agents)
+    plot(positions, color = c, group=status.(agents), 
+            seriestype = :scatter, title = "Initialized SIR", ratio=1,
+            lims=[-L,L]) # , background_color = "magenta"
+end
+
+let # test
+	N = 20
+	L = 10
+	visualize(initialize(N, L), L) # uncomment this line!
+end
+
+
+md"""
+
+### Exercise 3: Spatial epidemic model -- Dynamics
+
+Last week we wrote a function `interact!` that takes two agents, `agent` and `source`, and an infection of type `InfectionRecovery`, which models the interaction between two agent, and possibly modifies `agent` with a new status.
+
+This week, we define a new infection type, `CollisionInfectionRecovery`, and a new method that is the same as last week, except it **only infects `agent` if `agents.position==source.position`**.
+"""	
+
+abstract type AbstractInfection end 
+
+struct CollisionInfectionRecovery <: AbstractInfection 
+    p_infection::Float64
+    p_recovery::Float64 
+end
+
+#old functions 
+function bernoulli(p::Number)
+	rand() < p
+end
+function set_status!(agent::Agent, new_status::InfectionStatus) # modifies argument 
+	# your code here
+	agent.status = new_status
+end
+function is_susceptible(agent::Agent)
+	
+	return agent.status == S 
+end
+function is_infected(agent::Agent)
+	
+	return agent.status == I
+end
+
+
+"
+Write a function `interact!` that takes two `Agent`s and a `CollisionInfectionRecovery`, and:
+
+    - If the agents are at the same spot, 
+        - causes a susceptible agent to communicate the desease 
+            from an infectious one with the correct probability.
+    - if the first agent is infectious, it recovers with some probability
+"
+function interact!(agent::Agent, source::Agent, infection::CollisionInfectionRecovery)
+    if position(agent) == position(source) 
+        if is_susceptible(agent) && is_infected(source) && bernoulli(infection.p_infection) # same spot
+            set_status!(agent, I)
+        #= # both source and agent can infect each other if infected and the other is susceptible
+        elseif is_susceptible(source) && is_infected(agent) && bernoulli(infection.p_infection) # same spot
+            set_status!(source, I)
+        end 
+
+        if is_infected(agent) && bernoulli(infection.p_recovery)
+            set_status!(agent, R)
+        end  =#
+        end # only source can infect agent 
+        if is_infected(agent) && bernoulli(infection.p_recovery)
+            set_status!(agent, R)
+        end
+    end 
+end
+let #testing
+    as, ai = Agent(),Agent(I)
+    interact!(as, ai, CollisionInfectionRecovery(0.5,0.01))
+    as, ai
+end 
+
+
+
+"""
+#### Exercise 3.1
+Your turn!
+
+👉 Write a function `step!` that takes a vector of `Agent`s, 
+    a box size `L` and an `infection`. 
+    This that does one step of the dynamics on a vector of agents. 
+
+- Choose an Agent `source` at random.
+
+- Move the `source` one step, and use `collide_boundary` 
+    to ensure that our agent stays within the box.
+
+- For all _other_ agents, call `interact!(other_agent, source, infection)`.
+
+- return the array `agents` again.
+"""
+function step!(agents::Vector, L::Number, infection::AbstractInfection)
+	n = length(agents)
+    pos = rand(1:n) # position of random agent in vector 
+    source = agents[pos]
+    source.position = trajectory(position(source),1,L)[1]
+
+    for i in 1:n
+        if i == pos # interact on all other agents except n 
+            nothing
+        else 
+            interact!(agents[i], source, infection)
+        end 
+    end
+	
+    return agents
+end
+let 
+    L=1
+    testPop = initialize(12,L)
+    plot_before = visualize(testPop, L)
+    for i in 1:length(testPop)*1000
+        step!(testPop,L,CollisionInfectionRecovery(0.5, 0.00001))
+    end
+    plot_after = visualize(testPop, L)
+    plot(plot_before, plot_after)
+    testPop 
+end
+    
+function sweep!(agents::Vector{Agent}, L::Number, infection::AbstractInfection)
+	for i in 1:size(agents,1)
+		step!(agents, L, infection) 
+	end 
+end
+
+let
+    k_sweeps = 1000
+    pandemic = CollisionInfectionRecovery(0.5, 0.00001)
+	N = 100
+	L = 5
+	
+    agents = initialize(N,L) # initialize vector 
+
+	plot_before = visualize(agents, L)
+    
+    # run `k_sweeps` k_sweeps
+    for i in 1:(k_sweeps)
+        sweep!(agents, L, pandemic) # runs step!, n times each sweep 
+    end 
+    plot_after = visualize(agents, L)
+	
+	plot(plot_before, plot_after)
+end
+
+"count ***current*** numbers of SIR"
+function count_SIR(agents::Vector) 
+    counts = zeros(Int,1,3)
+    for i in agents
+        currStatus = status(i)
+        if      currStatus == S
+            counts[1] += 1 
+        elseif  currStatus == I
+            counts[2] += 1 
+        else  # currStatus == R
+            counts[3] += 1 
+        end 
+    end 
+
+    #return (S=counts[1],I=counts[2],R=counts[3]) # NamedTuple
+    return counts
+end 
+let 
+    agents = initialize(10,1)
+    count_SIR(agents)
+    m = count_SIR(agents)
+    for i in 1:10-1
+        m = vcat(m,count_SIR(agents))
+    end 
+    m
+    plot(m,color =[color(S) color(I) color(R)])
+end
+
+
+let 
+    k_sweep_max = 10000
+    N = 50
+	L = 1
+	pandemic = CollisionInfectionRecovery(0.5, 0.00001)
+
+	agents = initialize(N, L)
+
+	# compute k_sweep_max number of sweeps and plot the SIR
+    SIR_vec = count_SIR(agents)
+    for i in 2:k_sweep_max
+        sweep!(agents, L, pandemic) # runs step!, n times each sweep
+        SIR_vec = vcat(SIR_vec, count_SIR(agents)) 
+    end 
+    SIR_vec
+    plot(SIR_vec, color =[color(S) color(I) color(R)], label =["S" "I" "R"], 
+            title = "SIR Curves")# # , background_color = "magenta"
+end
+
+let
+    N = 50
+    L = 40
+    pandemic = CollisionInfectionRecovery(0.5, 0.00001)
+    
+    x = initialize(N, L)
+    
+    # initialize to empty arrays
+    Ss, Is, Rs = Int[], Int[], Int[]
+    
+    Tmax = 200
+    
+    @gif for t in 1:Tmax
+        for i in 1:50N
+            step!(x, L, pandemic)
+        end
+
+        #... track S, I, R in Ss Is and Rs
+        tmpSIRs = count_SIR(x)
+        push!(Ss, tmpSIRs[1])
+        push!(Is, tmpSIRs[2])
+        push!(Rs, tmpSIRs[3])
+        left = visualize(x, L)
+    
+        right = plot(xlim=(1,Tmax), ylim=(1,N), size=(600,300))
+        plot!(right, 1:t, Ss, color=color(S), label="S")
+        plot!(right, 1:t, Is, color=color(I), label="I")
+        plot!(right, 1:t, Rs, color=color(R), label="R")
+    
+        plot(left, right)
+    end
+end
+
+
+function SIR_plot_adjust_params(N::Int=50, L::Int=40, 
+                                    pandemic::AbstractInfection=CollisionInfectionRecovery(0.5,0.001), 
+                                        k_sweep_max::Int=1000)
+	agents = initialize(N, L)
+
+	# compute k_sweep_max number of sweeps and plot the SIR
+    SIR_vec = count_SIR(agents)
+    for i in 2:k_sweep_max
+        sweep!(agents, L, pandemic) # runs step!, n times each sweep
+        SIR_vec = vcat(SIR_vec, count_SIR(agents)) 
+    end 
+    return plot(SIR_vec, color =[color(S) color(I) color(R)], label =["S" "I" "R"], 
+            title = "SIR Curves")# # , background_color = "magenta"
+end
+pᵢ, pᵣ = 0.1, 0.001
+testing_Outbreak = CollisionInfectionRecovery(pᵢ, pᵣ)
+SIR_plot_adjust_params(10000,20,testing_Outbreak, 500)
 

@@ -376,6 +376,8 @@ begin
 	end
 	
 	Agent() = Agent(Coordinate(0,0),S)
+	Agent(x::Int,y::Int, Status::InfectionStatus) = Agent(Coordinate(x,y), Status)
+	Agent(Status::InfectionStatus) = Agent(Coordinate(0,0), Status)
 end 
 
 # ╔═╡ 23f252c9-4df8-49e6-a687-05541ad457f1
@@ -399,8 +401,11 @@ function initialize(N::Number, L::Number)
 	return population
 end
 
-# ╔═╡ 1d0f8eb4-0a46-11eb-38e7-63ecbadbfa20
+# ╔═╡ 0220c8ae-2cea-4c4f-b687-f640d3393d8b
 initialize(3, 10)
+
+# ╔═╡ ae2be3cb-4fc2-41cc-a46c-5d7e2436a0ab
+length(initialize(3, 10))
 
 # ╔═╡ e0b0880c-0a47-11eb-0db2-f760bbbf9c11
 # Color based on infection status
@@ -415,8 +420,17 @@ end
 # ╔═╡ b5a88504-0a47-11eb-0eda-f125d419e909
 position(a::Agent) = a.position # uncomment this line
 
+# ╔═╡ 1d0f8eb4-0a46-11eb-38e7-63ecbadbfa20
+position.(initialize(3, 10))
+
 # ╔═╡ 87a4cdaa-0a5a-11eb-2a5e-cfaf30e942ca
 color(a::Agent) = color(a.status) # uncomment this line
+
+# ╔═╡ bd9973c8-bcf0-4c49-8245-2d2801a47477
+status(a::Agent) = a.status # added
+
+# ╔═╡ 622de9c7-76f9-44c0-90ea-bd97e6d2dbdb
+status.(initialize(3, 10))
 
 # ╔═╡ 49fa8092-0a43-11eb-0ba9-65785ac6a42f
 md"""
@@ -427,16 +441,19 @@ You can use the keyword argument `c=color.(agents)` inside your call to the plot
 """
 
 # ╔═╡ 1ccc961e-0a69-11eb-392b-915be07ef38d
-# function visualize(agents::Vector, L)
-	
-# 	return missing
-# end
+function visualize(agents::Vector, L)
+
+    positions = [(position(i).x,position(i).y) for i in agents]
+    c = color.(agents)
+    plot(positions, color = c, seriestype = :scatter, title = "Plot", ratio=1,
+                 group=status.(agents))
+end 
 
 # ╔═╡ 1f96c80a-0a46-11eb-0690-f51c60e57c3f
 let
 	N = 20
 	L = 10
-#	visualize(initialize(N, L), L) # uncomment this line!
+	visualize(initialize(N, L), L) # uncomment this line!
 end
 
 # ╔═╡ f953e06e-099f-11eb-3549-73f59fed8132
@@ -458,6 +475,34 @@ struct CollisionInfectionRecovery <: AbstractInfection
 	p_recovery::Float64
 end
 
+# ╔═╡ 122461d6-4fbd-4952-b255-eba1109afcc3
+md" 
+##### Old Functions
+" 
+
+# ╔═╡ 8029fbe9-32b0-4057-8a18-559b0cb1cb97
+function bernoulli(p::Number)
+	rand() < p
+end
+
+# ╔═╡ ffc3672c-604b-4d44-85aa-dd16b5527131
+function set_status!(agent::Agent, new_status::InfectionStatus) # modifies argument 
+
+	agent.status = new_status
+end
+
+# ╔═╡ fb89dbd3-e6b5-42b7-b09d-ed451e3e4077
+function is_susceptible(agent::Agent)
+	
+	return agent.status == S 
+end
+
+# ╔═╡ 2965e4dc-0d4a-40f7-93f8-a4696136c031
+function is_infected(agent::Agent)
+	
+	return agent.status == I
+end
+
 # ╔═╡ 80f39140-0aef-11eb-21f7-b788c5eab5c9
 md"""
 
@@ -467,10 +512,33 @@ Write a function `interact!` that takes two `Agent`s and a `CollisionInfectionRe
 - if the first agent is infectious, it recovers with some probability
 """
 
-# ╔═╡ d1bcd5c4-0a4b-11eb-1218-7531e367a7ff
-#function interact!(agent::Agent, source::Agent, infection::CollisionInfectionRecovery)
-	#missing
-#end
+# ╔═╡ 17aa8b9f-a850-4f6a-9782-767625963627
+function interact!(agent::Agent, source::Agent, infection::CollisionInfectionRecovery)
+    if position(agent) == position(source) 
+        if is_susceptible(agent) && is_infected(source) && bernoulli(infection.p_infection) # same spot
+            set_status!(agent, I)
+        #= # both source and agent can infect each other if infected and the other is susceptible
+        elseif is_susceptible(source) && is_infected(agent) && bernoulli(infection.p_infection) # same spot
+            set_status!(source, I)
+        end 
+
+        if is_infected(agent) && bernoulli(infection.p_recovery)
+            set_status!(agent, R)
+        end  =#
+        end # only source can infect agent 
+        if is_infected(agent) && bernoulli(infection.p_recovery)
+            set_status!(agent, R)
+        end
+    end 
+end
+
+# ╔═╡ 4c5dd69d-1ef1-434f-bd5c-9c260fb0e819
+let 
+	as, ai = Agent(),Agent(I)
+	interact!(as, ai, CollisionInfectionRecovery(0.8,0.9))
+	#interact!(as, ai, CollisionInfectionRecovery(0.8,0.9)) # 2nd if case 
+	as, ai
+end 
 
 # ╔═╡ 34778744-0a5f-11eb-22b6-abe8b8fc34fd
 md"""
@@ -489,10 +557,22 @@ Your turn!
 """
 
 # ╔═╡ 24fe0f1a-0a69-11eb-29fe-5fb6cbf281b8
-# function step!(agents::Vector, L::Number, infection::AbstractInfection)
+function step!(agents::Vector, L::Number, infection::AbstractInfection)
+	n = length(agents)
+    pos = rand(1:n) # position of random agent in vector 
+    source = agents[pos]
+    source.position = trajectory(position(source),1,L)[1]
+
+    for i in 1:n
+        if i == pos # interact on all other agents except n 
+            nothing
+        else 
+            interact!(agents[i], source, infection)
+        end 
+    end
 	
-# 	return missing
-# end
+    return agents
+end
 
 # ╔═╡ 1fc3271e-0a45-11eb-0e8d-0fd355f5846b
 md"""
@@ -515,18 +595,26 @@ plot(plot_before, plot_after)
 pandemic = CollisionInfectionRecovery(0.5, 0.00001)
 
 # ╔═╡ 4e7fd58a-0a62-11eb-1596-c717e0845bd5
-@bind k_sweeps Slider(1:10000, default=1000)
+@bind k_sweeps Slider(1:10000, default=1000, show_value=true)
 
 # ╔═╡ 778c2490-0a62-11eb-2a6c-e7fab01c6822
-# let
-# 	N = 50
-# 	L = 40
+let
+    pandemic = CollisionInfectionRecovery(0.5, 0.00001)
+	N = 50
+	L = 40
 	
-# 	plot_before = plot(1:3) # replace with your code
-# 	plot_after = plot(1:3)
+    agents = initialize(N,L) # initialize vector 
+
+	plot_before = visualize(agents, L)
+    
+    # run `k_sweeps` k_sweeps
+    for i in 1:(N*k_sweeps)
+        step!(agents, L, pandemic)
+    end 
+    plot_after = visualize(agents, L)
 	
-# 	plot(plot_before, plot_after)
-# end
+	plot(plot_before, plot_after)
+end
 
 # ╔═╡ e964c7f0-0a61-11eb-1782-0b728fab1db0
 md"""
@@ -537,16 +625,53 @@ Every time that you move the slider, a completely new simulation is created an r
 👉 Plot the SIR curves of a single simulation, with the same parameters as in the previous exercise. Use `k_sweep_max = 10000` as the total number of sweeps.
 """
 
+# ╔═╡ 9c006b31-7c64-4741-b4b6-f676dbf40d6e
+function count_SIR(agents::Vector) 
+    counts = zeros(Int,1,3)
+    for i in agents
+        currStatus = status(i)
+        if      currStatus == S
+            counts[1] += 1 
+        elseif  currStatus == I
+            counts[2] += 1 
+        else  # currStatus == R
+            counts[3] += 1 
+        end 
+    end 
+
+    #return (S=counts[1],I=counts[2],R=counts[3]) # NamedTuple
+    return counts
+end 
+
+# ╔═╡ 21940771-c6c4-4435-a245-cb955b5b33f1
+function sweep!(agents::Vector{Agent}, L::Number, infection::AbstractInfection)
+	for i in 1:size(agents,1)
+		step!(agents, L, infection) 
+	end 
+end
+
+
 # ╔═╡ 4d83dbd0-0a63-11eb-0bdc-757f0e721221
 k_sweep_max = 10000
 
-# ╔═╡ ef27de84-0a63-11eb-177f-2197439374c5
-let
+# ╔═╡ 789ee0fe-8f0e-4bfc-b5a7-ca8ae78e22ec
+let 
+    k_sweep_max = 1000
 	N = 50
-	L = 30
-	
-	# agents = initialize(N, L)
+	L = 40
+	pandemic = CollisionInfectionRecovery(0.5, 0.1)
+
+	agents = initialize(N, L)
+
 	# compute k_sweep_max number of sweeps and plot the SIR
+    SIR_vec = count_SIR(agents)
+    for i in 2:k_sweep_max
+        sweep!(agents, L, pandemic) # runs step!, n times each sweep
+        SIR_vec = vcat(SIR_vec, count_SIR(agents)) 
+    end 
+    SIR_vec
+    plot(SIR_vec, color =[color(S) color(I) color(R)], label =["S" "I" "R"], 
+            title = "SIR Curves")# # , background_color = "magenta"
 end
 
 # ╔═╡ 201a3810-0a45-11eb-0ac9-a90419d0b723
@@ -562,18 +687,71 @@ This an optional exercise, and our solution to 2️⃣ is given below.
 """
 
 # ╔═╡ e5040c9e-0a65-11eb-0f45-270ab8161871
-# let
-# 	N = 50
-# 	L = 30
-	
-# 	missing
-# end
+let
+    N = 50
+    L = 40
+    pandemic = CollisionInfectionRecovery(0.5, 0.00001)
+    
+    x = initialize(N, L)
+    
+    # initialize to empty arrays
+    Ss, Is, Rs = Int[], Int[], Int[]
+    
+    Tmax = 200
+    
+    @gif for t in 1:Tmax
+        for i in 1:50N
+            step!(x, L, pandemic)
+        end
+
+        #... track S, I, R in Ss Is and Rs
+        tmpSIRs = count_SIR(x)
+        push!(Ss, tmpSIRs[1])
+        push!(Is, tmpSIRs[2])
+        push!(Rs, tmpSIRs[3])
+        left = visualize(x, L)
+    
+        right = plot(xlim=(1,Tmax), ylim=(1,N), size=(600,300))
+        plot!(right, 1:t, Ss, color=color(S), label="S")
+        plot!(right, 1:t, Is, color=color(I), label="I")
+        plot!(right, 1:t, Rs, color=color(R), label="R")
+    
+        plot(left, right)
+    end
+end
 
 # ╔═╡ 2031246c-0a45-11eb-18d3-573f336044bf
 md"""
 #### Exercise 3.5
 👉  Using $L=20$ and $N=100$, experiment with the infection and recovery probabilities until you find an epidemic outbreak. (Take the recovery probability quite small.) Modify the two infections below to match your observations.
 """
+
+# ╔═╡ a3d5a571-2353-4d64-8721-ff7f2df995d2
+md"
+p\_i	$(@bind p_i Slider(0.001:0.001:0.03, default=0.001, show_value=true))
+, p\_r $(@bind p_r Slider(0.001:0.001:0.01, default=0.001, show_value=true))
+"
+
+# ╔═╡ ff66557c-8014-47a8-9656-060d35d4c8b2
+testing_Outbreak = CollisionInfectionRecovery(p_i,p_r)
+
+# ╔═╡ 65af5a0f-1d46-4a84-9332-439e7672ee7e
+function SIR_plot_adjust_params(N::Int=50, L::Int=40, pandemic::AbstractInfection=CollisionInfectionRecovery(0.5,0.001), 
+                                        k_sweep_max::Int=1000)
+	agents = initialize(N, L)
+
+	# compute k_sweep_max number of sweeps and plot the SIR
+    SIR_vec = count_SIR(agents)
+    for i in 2:k_sweep_max
+        sweep!(agents, L, pandemic) # runs step!, n times each sweep
+        SIR_vec = vcat(SIR_vec, count_SIR(agents)) 
+    end 
+    return plot(SIR_vec, color =[color(S) color(I) color(R)], label =["S" "I" "R"], 
+            title = "SIR Curves")# # , background_color = "magenta"
+end
+
+# ╔═╡ f4ba77a7-0be0-4b43-80ec-829246acc9a1
+SIR_plot_adjust_params(100,20,testing_Outbreak, 10000)
 
 # ╔═╡ 63dd9478-0a45-11eb-2340-6d3d00f9bb5f
 causes_outbreak = CollisionInfectionRecovery(0.5, 0.001)
@@ -1014,7 +1192,7 @@ bigbreak
 # ╟─b4ed2362-09a0-11eb-0be9-99c91623b28f
 # ╠═0665aa3e-0a69-11eb-2b5d-cd718e3c7432
 # ╠═903fd22c-a47d-4c74-b6a7-7a71f6c4d0b2
-# ╟─1be6f8f0-f8df-46a0-8e57-634d825fc87c
+# ╠═1be6f8f0-f8df-46a0-8e57-634d825fc87c
 # ╠═79969ac2-ef82-4245-a787-cd04a566bf7b
 # ╟─ed2d616c-0a66-11eb-1839-edf8d15cf82a
 # ╟─3ed06c80-0954-11eb-3aee-69e4ccdc4f9d
@@ -1023,11 +1201,15 @@ bigbreak
 # ╠═23f252c9-4df8-49e6-a687-05541ad457f1
 # ╟─814e888a-0954-11eb-02e5-0964c7410d30
 # ╠═0cfae7ba-0a69-11eb-3690-d973d70e47f4
+# ╠═0220c8ae-2cea-4c4f-b687-f640d3393d8b
 # ╠═1d0f8eb4-0a46-11eb-38e7-63ecbadbfa20
+# ╠═622de9c7-76f9-44c0-90ea-bd97e6d2dbdb
+# ╠═ae2be3cb-4fc2-41cc-a46c-5d7e2436a0ab
 # ╟─4fac0f36-0a59-11eb-03d0-632dc9db063a
 # ╠═e0b0880c-0a47-11eb-0db2-f760bbbf9c11
 # ╠═b5a88504-0a47-11eb-0eda-f125d419e909
 # ╠═87a4cdaa-0a5a-11eb-2a5e-cfaf30e942ca
+# ╠═bd9973c8-bcf0-4c49-8245-2d2801a47477
 # ╟─49fa8092-0a43-11eb-0ba9-65785ac6a42f
 # ╠═1ccc961e-0a69-11eb-392b-915be07ef38d
 # ╠═1f96c80a-0a46-11eb-0690-f51c60e57c3f
@@ -1035,22 +1217,34 @@ bigbreak
 # ╟─f953e06e-099f-11eb-3549-73f59fed8132
 # ╠═e6dd8258-0a4b-11eb-24cb-fd5b3554381b
 # ╠═de88b530-0a4b-11eb-05f7-85171594a8e8
+# ╟─122461d6-4fbd-4952-b255-eba1109afcc3
+# ╟─8029fbe9-32b0-4057-8a18-559b0cb1cb97
+# ╟─ffc3672c-604b-4d44-85aa-dd16b5527131
+# ╟─fb89dbd3-e6b5-42b7-b09d-ed451e3e4077
+# ╟─2965e4dc-0d4a-40f7-93f8-a4696136c031
 # ╟─80f39140-0aef-11eb-21f7-b788c5eab5c9
-# ╠═d1bcd5c4-0a4b-11eb-1218-7531e367a7ff
+# ╠═17aa8b9f-a850-4f6a-9782-767625963627
+# ╟─4c5dd69d-1ef1-434f-bd5c-9c260fb0e819
 # ╟─34778744-0a5f-11eb-22b6-abe8b8fc34fd
 # ╠═24fe0f1a-0a69-11eb-29fe-5fb6cbf281b8
 # ╟─1fc3271e-0a45-11eb-0e8d-0fd355f5846b
-# ╟─18552c36-0a4d-11eb-19a0-d7d26897af36
+# ╠═18552c36-0a4d-11eb-19a0-d7d26897af36
 # ╠═4e7fd58a-0a62-11eb-1596-c717e0845bd5
 # ╠═778c2490-0a62-11eb-2a6c-e7fab01c6822
 # ╟─e964c7f0-0a61-11eb-1782-0b728fab1db0
+# ╠═9c006b31-7c64-4741-b4b6-f676dbf40d6e
+# ╠═21940771-c6c4-4435-a245-cb955b5b33f1
 # ╠═4d83dbd0-0a63-11eb-0bdc-757f0e721221
-# ╠═ef27de84-0a63-11eb-177f-2197439374c5
+# ╠═789ee0fe-8f0e-4bfc-b5a7-ca8ae78e22ec
 # ╟─8475baf0-0a63-11eb-1207-23f789d00802
 # ╟─201a3810-0a45-11eb-0ac9-a90419d0b723
 # ╠═e5040c9e-0a65-11eb-0f45-270ab8161871
 # ╟─f9b9e242-0a53-11eb-0c6a-4d9985ef1687
 # ╟─2031246c-0a45-11eb-18d3-573f336044bf
+# ╠═a3d5a571-2353-4d64-8721-ff7f2df995d2
+# ╠═ff66557c-8014-47a8-9656-060d35d4c8b2
+# ╟─65af5a0f-1d46-4a84-9332-439e7672ee7e
+# ╠═f4ba77a7-0be0-4b43-80ec-829246acc9a1
 # ╠═63dd9478-0a45-11eb-2340-6d3d00f9bb5f
 # ╠═269955e4-0a46-11eb-02cc-1946dc918bfa
 # ╠═4d4548fe-0a66-11eb-375a-9313dc6c423d
