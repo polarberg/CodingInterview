@@ -1,4 +1,4 @@
-using Plots
+using Plots, BenchmarkTools
 
 struct Coordinate 
     x::Int
@@ -205,10 +205,11 @@ let
     p
 end
 
+abstract type AbstractAgent end 
 
 @enum InfectionStatus S I R
 begin 
-    mutable struct Agent
+    mutable struct Agent <: AbstractAgent
         position::Coordinate
         status::InfectionStatus
     end
@@ -262,7 +263,9 @@ end
 
 Base.:position(a::Agent) = a.position 
 color(a::Agent) = color(a.status) 
-status(a::Agent) = a.status # I added
+#status(a::Agent) = a.status # I added
+status(a::AbstractAgent) = a.status # I added
+
 
 position.(initialize(3, 10))
 status.(initialize(3, 10))
@@ -326,7 +329,19 @@ function is_infected(agent::Agent)
 	return agent.status == I
 end
 
-
+function is_susceptible(agent::AbstractAgent)
+	
+	return agent.status == S 
+end
+function is_infected(agent::AbstractAgent)
+	
+	return agent.status == I
+end
+function set_status!(agent::AbstractAgent, new_status::InfectionStatus) # modifies argument 
+	# your code here
+	agent.status = new_status
+end
+is_susceptible(SocialAgent())
 "
 Write a function `interact!` that takes two `Agent`s and a `CollisionInfectionRecovery`, and:
 
@@ -406,7 +421,7 @@ let
     testPop 
 end
     
-function sweep!(agents::Vector{Agent}, L::Number, infection::AbstractInfection)
+function sweep!(agents::Vector, L::Number, infection::AbstractInfection)
 	for i in 1:size(agents,1)
 		step!(agents, L, infection) 
 	end 
@@ -529,5 +544,152 @@ function SIR_plot_adjust_params(N::Int=50, L::Int=40,
 end
 pᵢ, pᵣ = 0.1, 0.001
 testing_Outbreak = CollisionInfectionRecovery(pᵢ, pᵣ)
-SIR_plot_adjust_params(10000,20,testing_Outbreak, 500)
+SIR_plot_adjust_params(100,20,testing_Outbreak, 1000)
 
+
+
+
+
+
+
+
+begin
+    mutable struct SocialAgent <: AbstractAgent
+        position::Coordinate
+        status::InfectionStatus
+        num_infected::Int
+        social_score::Float64 # agent's probability of interacting with any other agent in the population
+    end
+
+    SocialAgent() = SocialAgent(Coordinate(0,0), S, 0, 0)
+    SocialAgent(x::Int,y::Int, Status::InfectionStatus) = SocialAgent(Coordinate(x,y), Status,0,0)
+    SocialAgent(Status::InfectionStatus) = SocialAgent(Coordinate(0,0), Status,0,0)
+end 
+SocialAgent(Coordinate(0,0), S , 0,1)
+
+begin
+    Base.:position(a::SocialAgent) = a.position
+    color(a::SocialAgent) = color(a.status)
+    social_score(a::SocialAgent) = a.social_score
+    num_infected(a::SocialAgent) = a.num_infected
+end
+color(SocialAgent(Coordinate(0,0), S , 0,1))
+social_score(SocialAgent(Coordinate(0,0), S , 0,1))
+num_infected(SocialAgent(Coordinate(0,0), S , 65,1))
+" 
+creates N (Social)agents  within a 2L x 2L box, with `social_score`s chosen from 
+    10 equally-spaced between 0.1 and 0.5. (see LinRange)
+# Arguments
+- `N::Int`: *Agents*
+- `L::Int`: *2L × 2L grid*
+"
+function initialize_social(N, L)
+    Agents = []
+    SocialScores = LinRange(0.1,0.5,10) # 10 equally spaced between 0.1 and 0.5 
+
+    #initialize
+    for i in 1:N # creates N agents 
+        push!(Agents, SocialAgent(Coordinate(rand(1:2L),rand(1:2L)),S,0,rand(SocialScores)))
+    end 
+    rand(Agents).status = I 
+
+	return Agents 
+end
+
+testing_SA = initialize_social(10, 1)
+for i in 1:10
+    step!(testing_SA,1,CollisionInfectionRecovery(0.5,0.01))
+end
+testing_SA
+visualize(testing_SA, 1)
+let
+    L=1
+    positions = make_tuple.(position.(testing_SA))
+    c = color.(testing_SA)
+    plot(positions, color = c, group=status.(testing_SA), 
+            seriestype = :scatter, title = "Initialized SIR", ratio=1,
+            lims=[-L,L]) # , background_color = "magenta"
+end
+initialize(10,10)
+social_score.(initialize_social(10,10))
+
+
+step!(testing_SA,10,CollisionInfectionRecovery(0.5,0.01))
+function interact!(agent::SocialAgent, source::SocialAgent, infection::CollisionInfectionRecovery)
+	if position(agent) == position(source)
+        if is_susceptible(agent) && is_infected(source) && bernoulli(agent.social_score + source.social_score)
+            set_status!(agent, I)
+            source.num_infected += 1
+        end 
+
+        if is_infected(agent) && bernoulli(infection.p_recovery)
+            set_status!(agent, R)
+        end
+    end 
+end
+
+
+let
+	N = 50
+	L = 40
+	N_sweeps = 100
+    pandemic = CollisionInfectionRecovery(0.03, 0.001)
+
+    global social_agents = initialize_social(N, L)
+	
+    # initialize to empty arrays
+    Ss, Is, Rs = [], [], []
+	
+	Tmax = 200
+	
+	@gif for t in 1:Tmax
+        # 1. Step! a lot
+		for s in 1:N_sweeps
+			sweep!(social_agents, L, pandemic)
+        end         
+		
+		# 2. Count S, I and R, push them to Ss Is Rs
+        tmpSIRs = count_SIR(social_agents)
+        push!(Ss, tmpSIRs[1])
+        push!(Is, tmpSIRs[2])
+        push!(Rs, tmpSIRs[3])
+
+		# 3. call visualize on the agents,
+        left = visualize(social_agents, L)
+
+		# 4. place the SIR plot next to visualize.
+        #right = SIR_plot_adjust_params(N, L, pandemic, N_sweeps)
+        right = plot(xlim=(1,Tmax), ylim=(1,N), size=(600,300))
+        plot!(right, 1:t, Ss, color=color(S), label="S")
+        plot!(right, 1:t, Is, color=color(I), label="I")
+        plot!(right, 1:t, Rs, color=color(R), label="R")
+
+		# plot(left, right, size=(600,300)) # final plot
+        plot(left, right)
+	end
+end
+
+md"""
+#### Exercise 4.4
+👉 Make a scatter plot showing each agent's `social_score` on one axis, and the `num_infected` from the simulation in the other axis. Run this simulation several times and comment on the results.
+"""
+let 
+    N = 50
+	L = 40
+	N_sweeps = 10000
+    pandemic = CollisionInfectionRecovery(0.03, 0.001)
+
+    social_agents = initialize_social(N, L)
+
+    # 1. Step! a lot
+	for s in 1:N_sweeps
+		sweep!(social_agents, L, pandemic)
+    end      
+    social_agents
+    social_scores_Vec, num_infected_Vec = social_score.(social_agents), num_infected.(social_agents) #x-axis 
+
+    # = # y-axis 
+    scatter(social_scores_Vec, num_infected_Vec)
+end
+
+scatter([1,2,3],[1,0,3])

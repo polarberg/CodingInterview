@@ -165,7 +165,7 @@ let
 end
 
 function repeat_simulations(N::Int64=100, T::Int64=1000, infection::AbstractInfection=InfectionRecovery(0.02, 0.002), num_simulations::Int64=20)
-	map(1:num_simulations) do _
+	map(1:num_simulations) do 
 		simulation(N, T, infection)
 	end
 end

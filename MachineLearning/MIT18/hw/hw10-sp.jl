@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.5
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -43,7 +43,7 @@ md"""
 # ╔═╡ 23335418-2433-11eb-05e4-2b35dc6cca0e
 # edit the code below to set your name and kerberos ID (i.e. email without @mit.edu)
 
-student = (name = "Jazzy Doe", kerberos_id = "jazz")
+student = (name = "Austin Nguyen", kerberos_id = "polarberg")
 
 # you might need to wait until all other cells in this notebook have completed running. 
 # scroll around the page to see what's up
@@ -183,6 +183,9 @@ The result of this subtraction, after rearranging, is our definition of $\text{E
 $\text{ECS} \equiv T_{eq} - T_{0} = -\frac{a\ln(2)}{B}$
 """
 
+# ╔═╡ 03cbb337-20db-49a0-9056-a8c8222a70ee
+plot(1:10,1:10)
+
 # ╔═╡ 7f961bc0-1fc5-11eb-1f18-612aeff0d8df
 md"""The plot below provides an example of an "abrupt 2 × CO₂" experiment, a classic experimental treatment method in climate modelling which is used in practice to estimate ECS for a particular model. (Note: in complicated climate models the values of the parameters $a$ and $B$ are not specified *a priori*, but *emerge* as outputs of the simulation.)
 
@@ -191,7 +194,7 @@ The simulation begins at the preindustrial equilibrium, i.e. a temperature $T_{0
 
 # ╔═╡ fa7e6f7e-2434-11eb-1e61-1b1858bb0988
 md"""
-``B = `` $(@bind B_slider Slider(-2.5:.001:0; show_value=true, default=-1.3))
+``B = `` $(@bind B_slider Slider(-2.5:.001:1.0; show_value=true, default=-1.3))
 """
 
 # ╔═╡ 16348b6a-1fc2-11eb-0b9c-65df528db2a1
@@ -206,7 +209,7 @@ md"""
 
 # ╔═╡ a86f13de-259d-11eb-3f46-1f6fb40020ce
 observations_from_changing_B = md"""
-Hello world!
+More negative value of B means value assymptotes to a less positive number, with less number of years
 """
 
 # ╔═╡ 3d66bd30-259d-11eb-2694-471fb3a4a7be
@@ -216,7 +219,8 @@ md"""
 
 # ╔═╡ 5f82dec8-259e-11eb-2f4f-4d661f44ef41
 observations_from_nonnegative_B = md"""
-Hello world!
+When B is equal to zero curve is linear.
+When B is greater than zero, max y is 4 and reaches there faster 
 """
 
 # ╔═╡ 56b68356-2601-11eb-39a9-5f4b8e580b87
@@ -233,9 +237,6 @@ end
 md"""
 👉 Create a graph to visualize ECS as a function of B. 
 """
-
-# ╔═╡ b9f882d8-266b-11eb-2998-75d6539088c7
-
 
 # ╔═╡ 269200ec-259f-11eb-353b-0b73523ef71a
 md"""
@@ -255,9 +256,12 @@ md"""
 
 # ╔═╡ 50ea30ba-25a1-11eb-05d8-b3d579f85652
 expected_double_CO2_year = let
-	
-	
-	missing
+ 
+	initial_year = 1850
+    final_year = initial_year + 300
+    # when is equal to double CO2 amount in initial_year
+    ans = findfirst(isapprox(2*Model.CO2_RCP85.(initial_year), atol=6.0), Model.CO2_RCP85(initial_year:final_year)) 
+    ans += initial_year
 end
 
 # ╔═╡ bade1372-25a1-11eb-35f4-4b43d4e8d156
@@ -295,7 +299,7 @@ let
 		size=(500,250), legend=:bottomright, 
 		title="Transient response to instant doubling of CO₂", 
 		ylabel="temperature change [°C]", xlabel="years after doubling",
-		ylim=(-.5, (isfinite(ecs) && ecs < 4) ? 4 : 10),
+		ylim=(-.5, (isfinite(ecs) && ecs < 4) ? 4 : 30),
 	)
 	
 	plot!(p, [ebm_ECS.t[1], ebm_ECS.t[end]], ecs .* [1,1], 
@@ -304,6 +308,12 @@ let
 	plot!(p, ebm_ECS.t, ebm_ECS.T .- ebm_ECS.T[1], 
 		label="ΔT(t) = T(t) - T₀")
 end |> as_svg
+
+# ╔═╡ b9f882d8-266b-11eb-2998-75d6539088c7
+let
+	B_range = -2.5:0.001:2.5
+	plot(B_range, ECS(B = B_range), xlabel= "B", label="B")	
+end 
 
 # ╔═╡ 736ed1b6-1fc2-11eb-359e-a1be0a188670
 B_samples = let
@@ -750,7 +760,7 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╔═╡ Cell order:
 # ╟─169727be-2433-11eb-07ae-ab7976b5be90
 # ╟─18be4f7c-2433-11eb-33cb-8d90ca6f124c
-# ╠═21524c08-2433-11eb-0c55-47b1bdc9e459
+# ╟─21524c08-2433-11eb-0c55-47b1bdc9e459
 # ╠═23335418-2433-11eb-05e4-2b35dc6cca0e
 # ╟─253f4da0-2433-11eb-1e48-4906059607d3
 # ╠═1e06178a-1fbf-11eb-32b3-61769a79b7c0
@@ -759,7 +769,8 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╟─930d7154-1fbf-11eb-1c3a-b1970d291811
 # ╟─1312525c-1fc0-11eb-2756-5bc3101d2260
 # ╠═c4398f9c-1fc4-11eb-0bbb-37f066c6027d
-# ╠═7f961bc0-1fc5-11eb-1f18-612aeff0d8df
+# ╠═03cbb337-20db-49a0-9056-a8c8222a70ee
+# ╟─7f961bc0-1fc5-11eb-1f18-612aeff0d8df
 # ╟─25f92dec-1fc4-11eb-055d-f34deea81d0e
 # ╟─fa7e6f7e-2434-11eb-1e61-1b1858bb0988
 # ╟─16348b6a-1fc2-11eb-0b9c-65df528db2a1
