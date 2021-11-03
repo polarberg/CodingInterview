@@ -1,3 +1,5 @@
+using Base: Int8
+using Plots: push!
 using Plots, BenchmarkTools
 
 struct Coordinate 
@@ -693,3 +695,52 @@ let
 end
 
 scatter([1,2,3],[1,0,3])
+
+
+for i in 0:1, j in 0:1, z in 0:1
+    println(i, j,z )
+end 
+
+3<<1
+bitstring((3 << 1) + 1)
+g=[0,1]
+push!(g, g[2]<<1 +1)
+push!(g, g[3]<<1 + 1)
+
+
+push!(g, g[4] - 1)
+push!(g, g[5]<<1 + 1)
+push!(g, g[6] - 1)
+
+bitstring.(g)
+let 
+    ans = [
+        "000"
+        "001"
+        "011"
+        "111"
+        "110"
+        "100"
+        "101"        
+        "100"
+        "010"        
+    ]
+    Int(ans[1])
+end
+Int("000")
+2^16
+1<<16
+ajifoej = zeros(5)
+function grayCode(n::Int)
+    count = (1 << n) 
+    vec = zeros(Int8, count)
+    for i in 1:count-1
+        vec[i+1] = i ⊻ (i >> 1)
+    end 
+    return vec 
+end 
+
+bitstring.(grayCode(3))
+
+(2 ⊻ (2 >> 1))
+'A' > 'B' 

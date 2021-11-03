@@ -77,5 +77,7 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp"
-    }
+    },
+    "terminal.integrated.cursorStyle": "line",
+    "sqltools.connections": []
 }

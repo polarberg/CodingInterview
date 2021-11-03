@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
@@ -333,8 +333,11 @@ md"""
 👉 Generate a probability distribution for the ECS based on the probability distribution function for $B$ above. Plot a histogram.
 """
 
+# ╔═╡ 431ed847-059a-40be-a414-af6fe6471ba8
+ECS(B=B_samples)
+
 # ╔═╡ 3d72ab3a-2689-11eb-360d-9b3d829b78a9
-ECS_samples = missing
+ECS_samples = plot(ECS(B=B_samples), size=(600, 250), label=nothing, xlabel="B [W/m²/K]", ylabel="samples")
 
 # ╔═╡ b6d7a362-1fc8-11eb-03bc-89464b55c6fc
 md"**Answer:**"
@@ -349,7 +352,13 @@ md"It looks like the ECS distribution is **not normally distributed**, even thou
 "
 
 # ╔═╡ 02173c7a-2695-11eb-251c-65efb5b4a45f
+mean(ECS(B=B_samples))
 
+# ╔═╡ 2b48638f-989f-49e8-a932-ad456941063b
+ECS(B=mean(B_samples))
+
+# ╔═╡ aa45d25a-be7c-40dd-ba4e-f20c66216abf
+count(>(ECS(B=mean(B_samples))), ECS(B=B_samples)) / length(B_samples)
 
 # ╔═╡ 440271b6-25e8-11eb-26ce-1b80aa176aca
 md"👉 Does accounting for uncertainty in feedbacks make our expectation of global warming better (less implied warming) or worse (more implied warming)?"
@@ -444,12 +453,10 @@ In this simulation, we used `T0 = 14` and `CO2 = t -> 280`, which is why `T` is 
 
 # ╔═╡ 9596c2dc-2671-11eb-36b9-c1af7e5f1089
 simulated_rcp85_model = let
-	
-	missing
+    RCP85 = Model.EBM(14.0, 1850., 1., Model.CO2_RCP85)
+	Model.run!(RCP85, 2020)
+	RCP85
 end
-
-# ╔═╡ f94a1d56-2671-11eb-2cdc-810a9c7a8a5f
-
 
 # ╔═╡ 4b091fac-2672-11eb-0db8-75457788d85e
 md"""
@@ -468,8 +475,9 @@ md"""
 
 # ╔═╡ f688f9f2-2671-11eb-1d71-a57c9817433f
 function temperature_response(CO2::Function, B::Float64=-1.3)
-	
-	return missing
+	ebm = Model.EBM(14.0, 1850., 1., CO2; B=B)
+	Model.run!(ebm, 2100)
+	return ebm
 end
 
 # ╔═╡ 049a866e-2672-11eb-29f7-bfea7ad8f572
@@ -592,7 +600,7 @@ md"""
 👉 Create a slider for `CO2` between `CO2min` and `CO2max`. Just like the horizontal axis of our plot, we want the slider to be _logarithmic_. 
 """
 
-# ╔═╡ 1d388372-2695-11eb-3068-7b28a2ccb9ac
+# ╔═╡ 2c90286c-8f10-4ffb-a8bc-c72b17a39ce4
 
 
 # ╔═╡ 4c9173ac-2685-11eb-2129-99071821ebeb
@@ -626,6 +634,14 @@ CO2min = 10
 
 # ╔═╡ 2bbf5a70-2676-11eb-1085-7130d4a30443
 CO2max = 1_000_000
+
+# ╔═╡ 1d388372-2695-11eb-3068-7b28a2ccb9ac
+md"""
+``log(CO_2) = `` $(@bind log_CO2 Slider(log10(CO2min):log10(CO2max); show_value=true))
+"""
+
+# ╔═╡ 75fd63e1-0a4c-46a1-b1a7-4878c54c43fd
+CO2 = 10^log_CO2
 
 # ╔═╡ de95efae-2675-11eb-0909-73afcd68fd42
 Tneo = -48
@@ -766,13 +782,13 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═1e06178a-1fbf-11eb-32b3-61769a79b7c0
 # ╟─87e68a4a-2433-11eb-3e9d-21675850ed71
 # ╟─fe3304f8-2668-11eb-066d-fdacadce5a19
-# ╟─930d7154-1fbf-11eb-1c3a-b1970d291811
+# ╠═930d7154-1fbf-11eb-1c3a-b1970d291811
 # ╟─1312525c-1fc0-11eb-2756-5bc3101d2260
 # ╠═c4398f9c-1fc4-11eb-0bbb-37f066c6027d
 # ╠═03cbb337-20db-49a0-9056-a8c8222a70ee
 # ╟─7f961bc0-1fc5-11eb-1f18-612aeff0d8df
 # ╟─25f92dec-1fc4-11eb-055d-f34deea81d0e
-# ╟─fa7e6f7e-2434-11eb-1e61-1b1858bb0988
+# ╠═fa7e6f7e-2434-11eb-1e61-1b1858bb0988
 # ╟─16348b6a-1fc2-11eb-0b9c-65df528db2a1
 # ╟─e296c6e8-259c-11eb-1385-53f757f4d585
 # ╠═a86f13de-259d-11eb-3f46-1f6fb40020ce
@@ -789,14 +805,17 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╟─51e2e742-25a1-11eb-2511-ab3434eacc3e
 # ╟─bade1372-25a1-11eb-35f4-4b43d4e8d156
 # ╠═02232964-2603-11eb-2c4c-c7b7e5fed7d1
-# ╟─736ed1b6-1fc2-11eb-359e-a1be0a188670
+# ╠═736ed1b6-1fc2-11eb-359e-a1be0a188670
 # ╠═49cb5174-1fc3-11eb-3670-c3868c9b0255
 # ╟─f3abc83c-1fc7-11eb-1aa8-01ce67c8bdde
+# ╠═431ed847-059a-40be-a414-af6fe6471ba8
 # ╠═3d72ab3a-2689-11eb-360d-9b3d829b78a9
 # ╟─b6d7a362-1fc8-11eb-03bc-89464b55c6fc
 # ╠═1f148d9a-1fc8-11eb-158e-9d784e390b24
 # ╟─cf8dca6c-1fc8-11eb-1f89-099e6ba53c22
 # ╠═02173c7a-2695-11eb-251c-65efb5b4a45f
+# ╠═2b48638f-989f-49e8-a932-ad456941063b
+# ╠═aa45d25a-be7c-40dd-ba4e-f20c66216abf
 # ╟─440271b6-25e8-11eb-26ce-1b80aa176aca
 # ╠═cf276892-25e7-11eb-38f0-03f75c90dd9e
 # ╟─5b5f25f0-266c-11eb-25d4-17e411c850c9
@@ -807,7 +826,6 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═bfb07a0a-2670-11eb-3938-772499c637b1
 # ╟─12cbbab0-2671-11eb-2b1f-038c206e84ce
 # ╠═9596c2dc-2671-11eb-36b9-c1af7e5f1089
-# ╠═f94a1d56-2671-11eb-2cdc-810a9c7a8a5f
 # ╟─4b091fac-2672-11eb-0db8-75457788d85e
 # ╟─9cdc5f84-2671-11eb-3c78-e3495bc64d33
 # ╠═f688f9f2-2671-11eb-1d71-a57c9817433f
@@ -830,6 +848,8 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╟─0e19f82e-2685-11eb-2e99-0d094c1aa520
 # ╟─1eabe908-268b-11eb-329b-b35160ec951e
 # ╠═1d388372-2695-11eb-3068-7b28a2ccb9ac
+# ╠═2c90286c-8f10-4ffb-a8bc-c72b17a39ce4
+# ╠═75fd63e1-0a4c-46a1-b1a7-4878c54c43fd
 # ╟─53c2eaf6-268b-11eb-0899-b91c03713da4
 # ╠═06d28052-2531-11eb-39e2-e9613ab0401c
 # ╟─4c9173ac-2685-11eb-2129-99071821ebeb
